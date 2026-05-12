@@ -1,1 +1,147 @@
-test
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="ADVERSE - 우주 공간 속 3D 가상 광고 월드를 탐험하는 정적 웹앱"
+    />
+    <title>ADVERSE - 3D Virtual Ad World</title>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <link rel="stylesheet" href="style.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="webglUnsupported" class="fatal hidden">
+      <strong>WebGL을 사용할 수 없습니다.</strong>
+      <span>브라우저의 하드웨어 가속 또는 WebGL 지원 상태를 확인해 주세요.</span>
+    </div>
+
+    <canvas id="worldCanvas" aria-label="ADVERSE 3D 광고 월드"></canvas>
+
+    <div id="loadingScreen" class="loading-screen">
+      <div class="loader-orbit" aria-hidden="true"></div>
+      <strong>ADVERSE</strong>
+      <span>3D 광고 월드를 준비하는 중...</span>
+    </div>
+
+    <section id="startOverlay" class="start-overlay" role="button" tabindex="0">
+      <div class="start-glow" aria-hidden="true"></div>
+      <div class="start-content">
+        <h1>ADVERSE</h1>
+        <p class="subtitle">3D Virtual Ad World</p>
+        <button type="button" id="startExploreButton">Click to Explore</button>
+        <ul class="start-help">
+          <li>WASD 이동</li>
+          <li>Mouse 시점 전환</li>
+          <li>Shift 빠른 이동</li>
+          <li>ESC 마우스 해제</li>
+          <li>~ 커서 토글</li>
+          <li>Wheel 줌</li>
+        </ul>
+        <p class="start-note">광고 근처로 가면 링크 팝업이 열립니다.</p>
+      </div>
+    </section>
+
+    <aside id="controlHint" class="control-hint" aria-label="조작 안내">
+      <strong>ADVERSE</strong>
+      <span>WASD Move</span>
+      <span>Mouse Look</span>
+      <span>Shift Run</span>
+      <span>ESC Unlock</span>
+      <span>~ Cursor</span>
+      <span>F Open Ad</span>
+      <span>Wheel Zoom</span>
+    </aside>
+
+    <div id="topBar" class="top-bar">
+      <button type="button" id="mouseModeButton" class="mode-button" title="~ 키로도 전환">
+        ~ Cursor
+      </button>
+      <button type="button" id="loginButton" class="login-button">Login</button>
+
+      <section id="chatWidget" class="chat-widget" aria-label="로컬 채팅">
+        <header>
+          <span>Local Chat</span>
+          <small id="chatUserLabel">익명</small>
+        </header>
+        <div id="chatMessages" class="chat-messages"></div>
+        <form id="chatForm" class="chat-form" autocomplete="off">
+          <input
+            id="chatInput"
+            type="text"
+            maxlength="120"
+            placeholder="익명 메시지"
+            aria-label="채팅 메시지"
+          />
+          <button id="chatSendButton" type="submit">Send</button>
+        </form>
+        <p id="chatStatus" class="chat-status"></p>
+      </section>
+    </div>
+
+    <section id="adPopup" class="ad-popup hidden" aria-live="polite">
+      <button type="button" id="adPopupClose" class="popup-close" aria-label="광고 팝업 닫기">
+        ×
+      </button>
+      <div id="adPopupThumb" class="ad-popup-thumb" aria-hidden="true"></div>
+      <div class="ad-popup-copy">
+        <strong id="adPopupTitle">광고명</strong>
+        <p id="adPopupDescription">광고 설명</p>
+        <small id="adPopupHint">F 키를 누르면 광고 페이지가 새 탭으로 열립니다.</small>
+        <button type="button" id="adPopupLink">F · 광고 페이지 열기</button>
+      </div>
+    </section>
+
+    <section id="loginModal" class="modal hidden" aria-hidden="true">
+      <div class="modal-backdrop" data-close-modal></div>
+      <form id="loginForm" class="login-modal" autocomplete="off">
+        <button type="button" class="modal-close" data-close-modal aria-label="로그인 창 닫기">
+          ×
+        </button>
+        <h2>Admin Login</h2>
+        <label>
+          <span>ID</span>
+          <input id="adminId" type="text" autocomplete="username" />
+        </label>
+        <label>
+          <span>Password</span>
+          <input id="adminPassword" type="password" autocomplete="current-password" />
+        </label>
+        <p id="loginError" class="form-error"></p>
+        <button type="submit" class="primary-button">Login</button>
+      </form>
+    </section>
+
+    <aside id="adminPanel" class="admin-panel hidden" aria-label="관리자 패널"></aside>
+
+    <section id="placementHud" class="placement-hud hidden" aria-live="polite">
+      <strong>3D 배치 모드</strong>
+      <span>격자 위에서 마우스를 움직이고 클릭하면 위치가 적용됩니다.</span>
+      <span>Q / E 회전 · ESC 종료</span>
+    </section>
+
+    <section id="mobileControls" class="mobile-controls" aria-label="모바일 조작">
+      <p>PC에서는 WASD와 마우스로 탐험할 수 있습니다.</p>
+      <div class="mobile-pad" aria-label="이동 버튼">
+        <button type="button" data-mobile-key="forward">▲</button>
+        <button type="button" data-mobile-key="left">◀</button>
+        <button type="button" data-mobile-key="backward">▼</button>
+        <button type="button" data-mobile-key="right">▶</button>
+      </div>
+      <div id="mobileLookArea" class="mobile-look-area">Drag Look</div>
+    </section>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
