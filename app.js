@@ -2100,6 +2100,10 @@ function createAdPlaneMaterial(ad, options = {}) {
       },
       undefined,
       () => {
+        console.warn(
+          `Image texture failed for "${ad.title}". JPG/PNG/WebP are supported, but WebGL textures require CORS-enabled image URLs.`,
+          imageUrl,
+        );
         material.map = placeholder;
         material.needsUpdate = true;
       },
@@ -2518,6 +2522,7 @@ function renderAdForm() {
         </label>
         <label>이미지 URL
           <input name="imageUrl" value="${escapeAttr(ad.imageUrl || "")}" placeholder="https://..." />
+          <small class="form-help">JPG/PNG/WebP/AVIF 모두 가능하지만 WebGL 광고판에는 이미지 서버의 CORS 허용이 필요합니다.</small>
         </label>
         <label>광고 링크 URL
           <input name="linkUrl" value="${escapeAttr(ad.linkUrl || "")}" placeholder="https://example.com" />
@@ -2583,6 +2588,7 @@ function renderAdForm() {
       <p id="adFormMessage" class="admin-message"></p>
       <div class="form-row-actions">
         <button type="submit" class="primary-button">저장</button>
+        <button type="button" class="small-button" data-action="test-image-url">이미지 테스트</button>
         <button type="button" class="small-button" data-action="placement-start">3D 격자로 배치</button>
         <button type="button" class="ghost-button hidden" data-action="placement-stop">배치 종료</button>
         <button type="button" class="ghost-button" data-action="cancel-form">취소</button>
@@ -2727,6 +2733,11 @@ function handleAdminClick(event) {
     if (form) startPlacementMode(form);
     return;
   }
+  if (action === "test-image-url") {
+    const form = document.getElementById("adForm");
+    if (form) testImageUrlFromForm(form);
+    return;
+  }
   if (action === "placement-stop") {
     stopPlacementMode(true);
     return;
@@ -2786,6 +2797,41 @@ function updateVisibleTypeFields(type) {
   document.querySelectorAll("[data-type-fields]").forEach((element) => {
     element.classList.toggle("hidden", element.dataset.typeFields !== type);
   });
+}
+
+function testImageUrlFromForm(form) {
+  const message = document.getElementById("adFormMessage");
+  const rawUrl = form.elements.imageUrl?.value || "";
+  const url = sanitizeUrl(rawUrl, true);
+  if (!url) {
+    if (message) {
+      message.classList.remove("ok");
+      message.textContent = "이미지 URL이 비어 있거나 http/https/data:image 형식이 아닙니다.";
+    }
+    return;
+  }
+
+  if (message) {
+    message.classList.remove("ok");
+    message.textContent = "이미지 CORS 로딩을 테스트하는 중입니다...";
+  }
+
+  const image = new Image();
+  image.crossOrigin = "anonymous";
+  image.onload = () => {
+    if (message) {
+      message.classList.add("ok");
+      message.textContent = "이미지 테스트 성공: 광고판 텍스처로 사용할 수 있습니다.";
+    }
+  };
+  image.onerror = () => {
+    if (message) {
+      message.classList.remove("ok");
+      message.textContent =
+        "이미지 테스트 실패: JPG 문제가 아니라 이미지 서버가 CORS를 허용하지 않거나 AVIF/리다이렉트 응답이 막혔을 가능성이 큽니다. Firebase Storage, GitHub Pages, Imgur처럼 CORS 가능한 URL을 사용해 주세요.";
+    }
+  };
+  image.src = url;
 }
 
 function saveAdFromForm(form) {
